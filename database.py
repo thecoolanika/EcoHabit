@@ -26,13 +26,13 @@ def get_session():
         session.close()
 
 # User Functions
-def create_user(username, password, name, dorm, campus):
+def create_user(username, password, name, campus):
     """Create a new user."""
     user_id = str(uuid.uuid4())
     with get_session() as session:
         query = sa.text("""
-            INSERT INTO users (user_id, username, password, name, dorm, campus)
-            VALUES (:user_id, :username, :password, :name, :dorm, :campus)
+            INSERT INTO users (user_id, username, password, name, campus)
+            VALUES (:user_id, :username, :password, :name, :campus)
         """)
         try:
             session.execute(query, {
@@ -40,7 +40,6 @@ def create_user(username, password, name, dorm, campus):
                 'username': username,
                 'password': password,  # Would use hashing in production
                 'name': name,
-                'dorm': dorm,
                 'campus': campus
             })
             return user_id
@@ -51,7 +50,7 @@ def validate_user(username, password):
     """Validate user credentials."""
     with get_session() as session:
         query = sa.text("""
-            SELECT user_id, name, dorm, campus
+            SELECT user_id, name, campus
             FROM users
             WHERE username = :username AND password = :password
         """)
@@ -60,8 +59,7 @@ def validate_user(username, password):
             return {
                 'user_id': result[0],
                 'name': result[1],
-                'dorm': result[2],
-                'campus': result[3]
+                'campus': result[2]
             }
         return None
 
@@ -153,20 +151,10 @@ def get_user_badges(user_id):
 def get_individual_leaderboard():
     """Get top users by points."""
     query = """
-        SELECT name, dorm, campus, total_points
+        SELECT name, campus, total_points
         FROM users
         ORDER BY total_points DESC
         LIMIT 10
-    """
-    return pd.read_sql(query, engine)
-
-def get_dorm_leaderboard():
-    """Get top dorms by points."""
-    query = """
-        SELECT dorm, SUM(total_points) as total_points
-        FROM users
-        GROUP BY dorm
-        ORDER BY total_points DESC
     """
     return pd.read_sql(query, engine)
 

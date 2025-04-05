@@ -24,17 +24,16 @@ def register_user():
         username = st.text_input("Username")
         password = st.text_input("Password", type="password")
         name = st.text_input("Full Name")
-        dorm = st.selectbox("Dorm", ["North Hall", "South Hall", "East Hall", "West Hall"])
         campus = st.selectbox("Campus", ["Main Campus", "North Campus", "South Campus"])
         
         submitted = st.form_submit_button("Register")
         
         if submitted:
-            if not (username and password and name and dorm and campus):
+            if not (username and password and name and campus):
                 st.error("All fields are required!")
                 return
                 
-            user_id = db.create_user(username, password, name, dorm, campus)
+            user_id = db.create_user(username, password, name, campus)
             if user_id:
                 st.success("Registration successful! Please log in.")
                 st.session_state.show_login = True

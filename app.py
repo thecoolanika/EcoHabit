@@ -16,7 +16,7 @@ st.set_page_config(
 st.markdown("""
 <style>
     .main {
-        background-color: #f5f7f5;
+        background-color: #4a5d23;
     }
     .stTabs [data-baseweb="tab-list"] {
         gap: 24px;
@@ -48,7 +48,6 @@ if not init_auth():
 # Display user info
 user = st.session_state.user
 st.sidebar.markdown(f"### Welcome, {user['name']}")
-st.sidebar.markdown(f"**Dorm:** {user['dorm']}")
 st.sidebar.markdown(f"**Campus:** {user['campus']}")
 
 # Sidebar navigation
@@ -142,7 +141,7 @@ elif page == "Log Activities":
 elif page == "Leaderboard":
     st.header("Sustainability Leaderboard")
     
-    tab1, tab2, tab3 = st.tabs(["Individual", "Dorm", "Campus"])
+    tab1, tab2, tab3 = st.tabs(["Individual", "Campus"])
     
     with tab1:
         individual_leaders = db.get_individual_leaderboard()
@@ -165,44 +164,15 @@ elif page == "Leaderboard":
         
         # Show table
         st.dataframe(
-            individual_leaders[['name', 'dorm', 'campus', 'total_points']],
+            individual_leaders[['name', 'campus', 'total_points']],
             column_config={
                 "name": "Name",
-                "dorm": "Dorm",
                 "campus": "Campus",
                 "total_points": st.column_config.NumberColumn("Points", format="%d")
             },
             hide_index=True
         )
     
-    with tab2:
-        dorm_leaders = db.get_dorm_leaderboard()
-        st.subheader("Dorm Rankings")
-        
-        # Highlight the user's dorm
-        dorm_leaders['highlight'] = dorm_leaders['dorm'] == user['dorm']
-        
-        # Create a bar chart
-        fig = px.bar(
-            dorm_leaders,
-            x='dorm',
-            y='total_points',
-            color='highlight',
-            color_discrete_map={True: '#4CAF50', False: '#90EE90'},
-            labels={'total_points': 'Points', 'dorm': 'Dorm'},
-            title="Dorm Leaderboard"
-        )
-        st.plotly_chart(fig)
-        
-        # Show table
-        st.dataframe(
-            dorm_leaders,
-            column_config={
-                "dorm": "Dorm",
-                "total_points": st.column_config.NumberColumn("Total Points", format="%d")
-            },
-            hide_index=True
-        )
     
     with tab3:
         campus_leaders = db.get_campus_leaderboard()
