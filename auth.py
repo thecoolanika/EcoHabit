@@ -24,7 +24,7 @@ def register_user():
         username = st.text_input("Username")
         password = st.text_input("Password", type="password")
         name = st.text_input("Full Name")
-        campus = st.selectbox("Campus", ["Main Campus", "North Campus", "South Campus"])
+        campus = st.selectbox("Campus", ["Harvey Mudd", "Scripps", "Pomona", "Claremont McKenna", "Pitzer"])
         
         submitted = st.form_submit_button("Register")
         
