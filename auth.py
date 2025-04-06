@@ -13,7 +13,6 @@ def login_user():
             if user:
                 st.session_state.logged_in = True
                 st.session_state.user = user
-                st.success(f"Welcome back, {user['name']}!")
                 st.rerun()
             else:
                 st.error("Invalid username or password")
@@ -23,7 +22,7 @@ def register_user():
     with st.form("register_form"):
         username = st.text_input("Username")
         password = st.text_input("Password", type="password")
-        name = st.text_input("Full Name")
+        name = st.text_input("Nickname")
         campus = st.selectbox("Campus", ["Harvey Mudd", "Scripps", "Pomona", "Claremont McKenna", "Pitzer"])
         
         submitted = st.form_submit_button("Register")
@@ -35,9 +34,8 @@ def register_user():
                 
             user_id = db.create_user(username, password, name, campus)
             if user_id:
-                st.error("Registration successful! Please log in.")
+                st.info("Registration successful! Please log in.")
                 st.session_state.show_login = True
-                st.rerun()
             else:
                 st.error("Username already exists!")
 

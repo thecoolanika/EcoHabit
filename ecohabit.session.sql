@@ -1,4 +1,4 @@
 SELECT
-    username, total_points, campus
+   user_id, username
 FROM
     users

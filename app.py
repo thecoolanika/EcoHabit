@@ -3,6 +3,7 @@ import pandas as pd
 import plotly.express as px
 from auth import init_auth
 import database as db
+import pandas as pd
 
 # Configure the page
 st.set_page_config(
@@ -19,10 +20,11 @@ st.markdown("""
         background-color: #4a5d23;
     }
     .stTabs [data-baseweb="tab-list"] {
-        gap: 24px;
+            gap: 5px;
     }
     .stTabs [data-baseweb="tab"] {
         height: 50px;
+        width: 175px;
         white-space: pre-wrap;
         background-color: #e6f0e6;
         border-radius: 4px 4px 0px 0px;
@@ -33,6 +35,12 @@ st.markdown("""
     .stTabs [aria-selected="true"] {
         background-color: #4CAF50 !important;
         color: white !important;
+    }   
+    table td:nth-child(1) {
+        display: none
+    }
+    table th:nth-child(1) {
+        display: none
     }
 </style>
 """, unsafe_allow_html=True)
@@ -106,9 +114,6 @@ if page == "Dashboard":
                 st.markdown(f"### {badge['icon']} {badge['name']}")
                 st.caption(f"{badge['description']}")
                 st.markdown("---")
-        
-        # Link to leaderboard
-        st.markdown("[View Leaderboard →](#leaderboard)")
 
 # Activities page
 elif page == "Log Activities":
@@ -140,39 +145,16 @@ elif page == "Log Activities":
 # Leaderboard page
 elif page == "Leaderboard":
     st.header("Sustainability Leaderboard")
-    
+
     tab1, tab3 = st.tabs(["Individual", "Campus"])
     
     with tab1:
         individual_leaders = db.get_individual_leaderboard()
         st.subheader("Top Sustainable Individuals")
         
-        # Highlight the current user
-        individual_leaders['highlight'] = individual_leaders['name'] == user['name']
-        
-        # Create a bar chart
-        fig = px.bar(
-            individual_leaders,
-            x='name',
-            y='total_points',
-            color='highlight',
-            color_discrete_map={True: '#4CAF50', False: '#90EE90'},
-            labels={'total_points': 'Points', 'name': 'User'},
-            title="Individual Leaderboard"
-        )
-        st.plotly_chart(fig)
-        
         # Show table
-        st.dataframe(
-            individual_leaders[['name', 'campus', 'total_points']],
-            column_config={
-                "name": "Name",
-                "campus": "Campus",
-                "total_points": st.column_config.NumberColumn("Points", format="%d")
-            },
-            hide_index=True
-        )
-    
+        df = pd.DataFrame(individual_leaders[['name', 'badges', 'campus', 'total_points']])
+        st.table(df)
     
     with tab3:
         campus_leaders = db.get_campus_leaderboard()
@@ -191,6 +173,7 @@ elif page == "Leaderboard":
             labels={'total_points': 'Points', 'campus': 'Campus'},
             title="Campus Leaderboard"
         )
+        fig.update_layout(showlegend=False)
         st.plotly_chart(fig)
         
         # Show table
@@ -200,7 +183,8 @@ elif page == "Leaderboard":
                 "campus": "Campus",
                 "total_points": st.column_config.NumberColumn("Total Points", format="%d")
             },
-            hide_index=True
+            hide_index=True,
+            column_order=['campus', 'total_points']
         )
 
 # Badges page

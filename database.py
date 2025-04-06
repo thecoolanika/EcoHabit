@@ -40,7 +40,7 @@ def create_user(username, password, name, campus):
             session.execute(query, {
                 'user_id': user_id,
                 'username': username,
-                'password': password,  # Would use hashing in production
+                'password': password,
                 'name': name,
                 'campus': campus
             })
@@ -110,7 +110,7 @@ def check_badges(session, user_id):
         award_badge_if_not_exists(session, user_id, 2)  # Eco Warrior badge
     
     # Check category-specific badges
-    categories = {'water': 3, 'energy': 4, 'waste': 5}
+    categories = {'water': 3, 'energy': 4, 'waste': 5, 'community': 6}
     for category, badge_id in categories.items():
         category_query = text("""
             SELECT COUNT(*) FROM user_activities ua
@@ -150,11 +150,18 @@ def get_user_badges(user_id):
 
 # Leaderboard Functions
 def get_individual_leaderboard():
-    """Get top users by points."""
+    """Get top users by points with badge icons."""
     query = text("""
-        SELECT name, campus, total_points
-        FROM users
-        ORDER BY total_points DESC
+        SELECT 
+        u.name,
+        u.campus,
+        u.total_points,
+        COALESCE(STRING_AGG(b.icon, ''), '') AS badges
+        FROM users u
+        LEFT JOIN user_badges ub ON u.user_id = ub.user_id
+        LEFT JOIN badges b ON ub.badge_id = b.badge_id
+        GROUP BY u.name, u.campus, u.total_points
+        ORDER BY u.total_points DESC
         LIMIT 10
     """)
     return pd.read_sql(query, engine)
