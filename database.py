@@ -4,6 +4,8 @@ import uuid
 from sqlalchemy.orm import sessionmaker
 from contextlib import contextmanager
 import streamlit as st
+from sqlalchemy import update, table, column
+from sqlalchemy import text
 
 # Database connection string - adjust as needed
 DATABASE_URL = "postgresql+psycopg2://liviaordonez:ecohabit@localhost:5432/ecohabit"
@@ -30,9 +32,9 @@ def create_user(username, password, name, campus):
     """Create a new user."""
     user_id = str(uuid.uuid4())
     with get_session() as session:
-        query = sa.text("""
+        query = text("""
             INSERT INTO users (user_id, username, password, name, campus)
-            VALUES (:user_id, :username, :password, :name, :campus)
+            VALUES(:user_id, :username, :password, :name, :campus)
         """)
         try:
             session.execute(query, {
@@ -49,7 +51,7 @@ def create_user(username, password, name, campus):
 def validate_user(username, password):
     """Validate user credentials."""
     with get_session() as session:
-        query = sa.text("""
+        query = text("""
             SELECT user_id, name, campus
             FROM users
             WHERE username = :username AND password = :password
@@ -72,23 +74,22 @@ def log_activity(user_id, activity_id):
     """Log a user activity and update points."""
     with get_session() as session:
         # Get activity points
-        points_query = sa.text("SELECT points FROM activities WHERE activity_id = :activity_id")
+        points_query = text("SELECT points FROM activities WHERE activity_id = :activity_id")
         points = session.execute(points_query, {'activity_id': activity_id}).scalar()
         
         # Insert activity log
-        log_query = sa.text("""
+        log_query = text("""
             INSERT INTO user_activities (user_id, activity_id)
-            VALUES (:user_id, :activity_id)
+            VALUES(:user_id, :activity_id)
         """)
         session.execute(log_query, {'user_id': user_id, 'activity_id': activity_id})
         
         # Update user points
-        update_query = sa.text("""
-            UPDATE users
-            SET total_points = total_points + :points
-            WHERE user_id = :user_id
-        """)
-        session.execute(update_query, {'user_id': user_id, 'points': points})
+        users = table('users', column('user_id'), column('total_points'))
+        update_stmt = update(users).where(users.c.user_id == user_id).values(
+            total_points=users.c.total_points + points
+        )
+        session.execute(update_stmt)
         
         # Check for badges
         check_badges(session, user_id)
@@ -97,7 +98,7 @@ def log_activity(user_id, activity_id):
 def check_badges(session, user_id):
     """Check and award badges if criteria are met."""
     # Check total activities (for badges 1 and 2)
-    count_query = sa.text("""
+    count_query = text("""
         SELECT COUNT(*) FROM user_activities WHERE user_id = :user_id
     """)
     activity_count = session.execute(count_query, {'user_id': user_id}).scalar()
@@ -111,7 +112,7 @@ def check_badges(session, user_id):
     # Check category-specific badges
     categories = {'water': 3, 'energy': 4, 'waste': 5}
     for category, badge_id in categories.items():
-        category_query = sa.text("""
+        category_query = text("""
             SELECT COUNT(*) FROM user_activities ua
             JOIN activities a ON ua.activity_id = a.activity_id
             WHERE ua.user_id = :user_id AND a.category = :category
@@ -123,7 +124,7 @@ def check_badges(session, user_id):
 
 def award_badge_if_not_exists(session, user_id, badge_id):
     """Award a badge to a user if they don't already have it."""
-    check_query = sa.text("""
+    check_query = text("""
         SELECT COUNT(*) FROM user_badges
         WHERE user_id = :user_id AND badge_id = :badge_id
     """)
@@ -131,58 +132,58 @@ def award_badge_if_not_exists(session, user_id, badge_id):
                                {'user_id': user_id, 'badge_id': badge_id}).scalar() > 0
     
     if not has_badge:
-        award_query = sa.text("""
+        award_query = text("""
             INSERT INTO user_badges (user_id, badge_id)
-            VALUES (:user_id, :badge_id)
+            VALUES(:user_id, :badge_id)
         """)
         session.execute(award_query, {'user_id': user_id, 'badge_id': badge_id})
 
 def get_user_badges(user_id):
     """Get all badges earned by a user."""
-    query = """
+    query = text("""
         SELECT b.badge_id, b.name, b.description, b.icon, ub.earned_date
         FROM badges b
         JOIN user_badges ub ON b.badge_id = ub.badge_id
         WHERE ub.user_id = :user_id
-    """
+    """)
     return pd.read_sql(query, engine, params={'user_id': user_id})
 
 # Leaderboard Functions
 def get_individual_leaderboard():
     """Get top users by points."""
-    query = """
+    query = text("""
         SELECT name, campus, total_points
         FROM users
         ORDER BY total_points DESC
         LIMIT 10
-    """
+    """)
     return pd.read_sql(query, engine)
 
 def get_campus_leaderboard():
     """Get top campuses by points."""
-    query = """
+    query = text("""
         SELECT campus, SUM(total_points) as total_points
         FROM users
         GROUP BY campus
         ORDER BY total_points DESC
-    """
+    """)
     return pd.read_sql(query, engine)
 
 def get_user_recent_activities(user_id, limit=5):
     """Get a user's recent activities."""
-    query = """
+    query = text("""
         SELECT a.name, a.points, a.category, a.icon, ua.timestamp
         FROM user_activities ua
         JOIN activities a ON ua.activity_id = a.activity_id
         WHERE ua.user_id = :user_id
         ORDER BY ua.timestamp DESC
         LIMIT :limit
-    """
+    """)
     return pd.read_sql(query, engine, params={'user_id': user_id, 'limit': limit})
 
 def get_user_stats(user_id):
     """Get a user's activity statistics."""
-    query = """
+    query = text("""
         SELECT 
             COUNT(*) as total_activities,
             SUM(a.points) as total_points,
@@ -190,5 +191,5 @@ def get_user_stats(user_id):
         FROM user_activities ua
         JOIN activities a ON ua.activity_id = a.activity_id
         WHERE ua.user_id = :user_id
-    """
-    return pd.read_sql(query, engine, params={'user_id': user_id}).iloc[0]
+    """)
+    return pd.read_sql(query, engine, params={"user_id": user_id}).iloc[0]

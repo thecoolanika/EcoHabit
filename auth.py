@@ -35,7 +35,7 @@ def register_user():
                 
             user_id = db.create_user(username, password, name, campus)
             if user_id:
-                st.success("Registration successful! Please log in.")
+                st.error("Registration successful! Please log in.")
                 st.session_state.show_login = True
                 st.rerun()
             else:

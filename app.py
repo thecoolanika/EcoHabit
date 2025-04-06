@@ -141,7 +141,7 @@ elif page == "Log Activities":
 elif page == "Leaderboard":
     st.header("Sustainability Leaderboard")
     
-    tab1, tab2, tab3 = st.tabs(["Individual", "Campus"])
+    tab1, tab3 = st.tabs(["Individual", "Campus"])
     
     with tab1:
         individual_leaders = db.get_individual_leaderboard()
