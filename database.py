@@ -6,7 +6,7 @@ from contextlib import contextmanager
 import streamlit as st
 
 # Database connection string - adjust as needed
-DATABASE_URL = "mysql+pymysql://username:password@localhost/ecohabit"
+DATABASE_URL = "postgresql+psycopg2://liviaordonez:ecohabit@localhost:5432/ecohabit"
 
 # Create engine and session
 engine = sa.create_engine(DATABASE_URL)
